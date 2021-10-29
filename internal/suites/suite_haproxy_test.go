@@ -3,33 +3,21 @@ package suites
 import (
 	"testing"
 
-	"github.com/stretchr/testify/suite"
+	"github.com/poy/onpar"
 )
-
-type HAProxySuite struct {
-	*RodSuite
-}
-
-func NewHAProxySuite() *HAProxySuite {
-	return &HAProxySuite{RodSuite: new(RodSuite)}
-}
-
-func (s *HAProxySuite) TestOneFactorScenario() {
-	suite.Run(s.T(), NewOneFactorScenario())
-}
-
-func (s *HAProxySuite) TestTwoFactorScenario() {
-	suite.Run(s.T(), NewTwoFactorScenario())
-}
-
-func (s *HAProxySuite) TestCustomHeaders() {
-	suite.Run(s.T(), NewCustomHeadersScenario())
-}
 
 func TestHAProxySuite(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping suite test in short mode")
 	}
 
-	suite.Run(t, NewHAProxySuite())
+	o := onpar.New()
+	defer o.Run(t)
+
+	s := setupTest(t, "", true)
+	teardownTest(s)
+
+	TestRunOneFactorScenario(t)
+	TestRunTwoFactorScenario(t)
+	TestRunCustomHeadersScenario(t)
 }

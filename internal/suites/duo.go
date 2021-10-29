@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/matryer/is"
 )
 
 // DuoPolicy a type of policy.
@@ -20,16 +20,18 @@ const (
 
 // ConfigureDuo configure duo api to allow or block auth requests.
 func ConfigureDuo(t *testing.T, allowDeny DuoPolicy) {
+	is := is.New(t)
 	url := fmt.Sprintf("%s/allow", DuoBaseURL)
+
 	if allowDeny == Deny {
 		url = fmt.Sprintf("%s/deny", DuoBaseURL)
 	}
 
 	req, err := http.NewRequest("POST", url, nil)
-	require.NoError(t, err)
+	is.NoErr(err)
 
 	client := NewHTTPClient()
 	res, err := client.Do(req)
-	require.NoError(t, err)
-	require.Equal(t, 200, res.StatusCode)
+	is.NoErr(err)
+	is.Equal(200, res.StatusCode)
 }

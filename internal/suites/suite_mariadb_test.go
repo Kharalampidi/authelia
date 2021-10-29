@@ -3,29 +3,20 @@ package suites
 import (
 	"testing"
 
-	"github.com/stretchr/testify/suite"
+	"github.com/poy/onpar"
 )
-
-type MariadbSuite struct {
-	*RodSuite
-}
-
-func NewMariadbSuite() *MariadbSuite {
-	return &MariadbSuite{RodSuite: new(RodSuite)}
-}
-
-func (s *MariadbSuite) TestOneFactorScenario() {
-	suite.Run(s.T(), NewOneFactorScenario())
-}
-
-func (s *MariadbSuite) TestTwoFactorScenario() {
-	suite.Run(s.T(), NewTwoFactorScenario())
-}
 
 func TestMariadbSuite(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping suite test in short mode")
 	}
 
-	suite.Run(t, NewMariadbSuite())
+	o := onpar.New()
+	defer o.Run(t)
+
+	s := setupTest(t, "", true)
+	teardownTest(s)
+
+	TestRunOneFactorScenario(t)
+	TestRunTwoFactorScenario(t)
 }

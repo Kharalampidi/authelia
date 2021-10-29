@@ -28,10 +28,12 @@ var ErrNoRunningSuite = errors.New("no running suite")
 var runningSuiteFile = ".suite"
 
 var headless bool
+var parallel int
 var testPattern string
 
 func init() {
 	SuitesTestCmd.Flags().BoolVar(&headless, "headless", false, "Run tests in headless mode")
+	SuitesTestCmd.Flags().IntVar(&parallel, "parallel", 0, "Run tests in parallel with n jobs")
 	SuitesTestCmd.Flags().StringVar(&testPattern, "test", "", "The single test to run")
 }
 
@@ -281,6 +283,10 @@ func runSuiteTests(suiteName string, withEnv bool) error {
 	}
 
 	testCmdLine := fmt.Sprintf("go test -count=1 -v ./internal/suites -timeout %s ", timeout)
+
+	if parallel > 0 {
+		testCmdLine += fmt.Sprintf("-parallel=%v ", parallel)
+	}
 
 	if testPattern != "" {
 		testCmdLine += fmt.Sprintf("-run '%s'", testPattern)

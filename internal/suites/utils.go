@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/go-rod/rod"
@@ -49,8 +49,8 @@ func (rs *RodSession) collectCoverage(page *rod.Page) {
 	}
 }
 
-func (rs *RodSession) collectScreenshot(err error, page *rod.Page) {
-	if err == context.DeadlineExceeded && os.Getenv("CI") == stringTrue {
+func (rs *RodSession) collectScreenshot(name string, err error, page *rod.Page) {
+	if err == context.DeadlineExceeded {
 		base := "/buildkite/screenshots"
 		build := os.Getenv("BUILDKITE_BUILD_NUMBER")
 		suite := strings.ToLower(os.Getenv("SUITE"))
@@ -61,12 +61,7 @@ func (rs *RodSession) collectScreenshot(err error, page *rod.Page) {
 			log.Fatal(err)
 		}
 
-		pc, _, _, _ := runtime.Caller(2)
-		fn := runtime.FuncForPC(pc)
-		p := "github.com/authelia/authelia/v4/internal/suites."
-		r := strings.NewReplacer(p, "", "(", "", ")", "", "*", "", ".", "-")
-
-		page.MustScreenshotFullPage(fmt.Sprintf("%s/%s.jpg", path, r.Replace(fn.Name())))
+		page.MustScreenshotFullPage(fmt.Sprintf("%s/%s.jpg", path, strings.ReplaceAll(name, "/", "-")))
 	}
 }
 
@@ -102,4 +97,74 @@ func fixCoveragePath(path string, file os.FileInfo, err error) error {
 	}
 
 	return nil
+}
+
+func setupTest(t *testing.T, proxy string, register bool) RodSuite {
+	s := RodSuite{}
+
+	browser, err := StartRodWithProxy(proxy)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	s.RodSession = browser
+
+	if proxy == "" {
+		s.Page = s.doCreateTab(HomeBaseURL)
+		s.verifyIsHome(t, s.Page)
+	}
+
+	if register {
+		secret = s.doLoginAndRegisterTOTP(t, s.Page, testUsername, testPassword, false)
+	}
+
+	return s
+}
+
+func setupCLITest() (s *CommandSuite) {
+	s = &CommandSuite{}
+
+	dockerEnvironment := NewDockerEnvironment([]string{
+		"internal/suites/docker-compose.yml",
+		"internal/suites/CLI/docker-compose.yml",
+		"internal/suites/example/compose/authelia/docker-compose.backend.{}.yml",
+	})
+	s.DockerEnvironment = dockerEnvironment
+
+	testArg := ""
+	coverageArg := ""
+
+	if os.Getenv("CI") == stringTrue {
+		testArg = "-test.coverprofile=/authelia/coverage-$(date +%s).txt"
+		coverageArg = "COVERAGE"
+	}
+
+	s.testArg = testArg
+	s.coverageArg = coverageArg
+
+	return s
+}
+
+func teardownTest(s RodSuite) {
+	s.collectCoverage(s.Page)
+	s.MustClose()
+	err := s.RodSession.Stop()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func teardownDuoTest(t *testing.T, s RodSuite) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer func() {
+		cancel()
+		s.collectScreenshot(t.Name(), ctx.Err(), s.Page)
+	}()
+
+	s.doLogout(t, s.Context(ctx))
+	s.doLoginOneFactor(t, s.Context(ctx), "john", "password", false, "")
+	s.verifyIsSecondFactorPage(t, s.Context(ctx))
+	s.doChangeMethod(t, s.Context(ctx), "one-time-password")
+	s.WaitElementLocatedByCSSSelector(t, s.Context(ctx), "one-time-password-method")
 }

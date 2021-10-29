@@ -6,23 +6,62 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/stretchr/testify/suite"
+	"github.com/matryer/is"
+	"github.com/poy/onpar"
 )
 
-// WARNING: This scenario is intended to be used with TLS enabled in the authelia backend.
+func TestRunBackendProtectionScenario(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping suite test in short mode")
+	}
 
-type BackendProtectionScenario struct {
-	suite.Suite
+	o := onpar.New()
+	defer o.Run(t)
+
+	// WARNING: This scenario should be run with TLS enabled in the authelia backend.
+	o.Group("TestBackendProtectionScenario", func() {
+		o.BeforeEach(func(t *testing.T) (*testing.T, RodSuite) {
+			s := setupTest(t, "", false)
+			return t, s
+		})
+
+		o.AfterEach(func(t *testing.T, s RodSuite) {
+			teardownTest(s)
+		})
+
+		o.Spec("TestProtectionOfBackendEndpoints", func(t *testing.T, s RodSuite) {
+			AssertRequestStatusCode(t, "POST", fmt.Sprintf("%s/api/secondfactor/totp", AutheliaBaseURL), 403)
+			AssertRequestStatusCode(t, "POST", fmt.Sprintf("%s/api/secondfactor/u2f/sign", AutheliaBaseURL), 403)
+			AssertRequestStatusCode(t, "POST", fmt.Sprintf("%s/api/secondfactor/u2f/register", AutheliaBaseURL), 403)
+			AssertRequestStatusCode(t, "POST", fmt.Sprintf("%s/api/secondfactor/u2f/sign_request", AutheliaBaseURL), 403)
+			AssertRequestStatusCode(t, "POST", fmt.Sprintf("%s/api/user/info/2fa_method", AutheliaBaseURL), 403)
+
+			AssertRequestStatusCode(t, "GET", fmt.Sprintf("%s/api/user/info", AutheliaBaseURL), 403)
+			AssertRequestStatusCode(t, "GET", fmt.Sprintf("%s/api/configuration", AutheliaBaseURL), 403)
+
+			AssertRequestStatusCode(t, "POST", fmt.Sprintf("%s/api/secondfactor/u2f/identity/start", AutheliaBaseURL), 403)
+			AssertRequestStatusCode(t, "POST", fmt.Sprintf("%s/api/secondfactor/u2f/identity/finish", AutheliaBaseURL), 403)
+			AssertRequestStatusCode(t, "POST", fmt.Sprintf("%s/api/secondfactor/totp/identity/start", AutheliaBaseURL), 403)
+			AssertRequestStatusCode(t, "POST", fmt.Sprintf("%s/api/secondfactor/totp/identity/finish", AutheliaBaseURL), 403)
+		})
+
+		o.Spec("TestInvalidEndpointsReturn404", func(t *testing.T, s RodSuite) {
+			AssertRequestStatusCode(t, "GET", fmt.Sprintf("%s/api/not_existing", AutheliaBaseURL), 404)
+			AssertRequestStatusCode(t, "HEAD", fmt.Sprintf("%s/api/not_existing", AutheliaBaseURL), 404)
+			AssertRequestStatusCode(t, "POST", fmt.Sprintf("%s/api/not_existing", AutheliaBaseURL), 404)
+
+			AssertRequestStatusCode(t, "GET", fmt.Sprintf("%s/api/not_existing/second", AutheliaBaseURL), 404)
+			AssertRequestStatusCode(t, "HEAD", fmt.Sprintf("%s/api/not_existing/second", AutheliaBaseURL), 404)
+			AssertRequestStatusCode(t, "POST", fmt.Sprintf("%s/api/not_existing/second", AutheliaBaseURL), 404)
+		})
+	})
 }
 
-func NewBackendProtectionScenario() *BackendProtectionScenario {
-	return &BackendProtectionScenario{}
-}
-
-func (s *BackendProtectionScenario) AssertRequestStatusCode(method, url string, expectedStatusCode int) {
-	s.Run(url, func() {
+func AssertRequestStatusCode(t *testing.T, method, url string, expectedStatusCode int) {
+	t.Run(url, func(t *testing.T) {
+		is := is.New(t)
 		req, err := http.NewRequest(method, url, nil)
-		s.Assert().NoError(err)
+		is.NoErr(err)
 
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // Needs to be enabled in suites. Not used in production.
@@ -34,41 +73,7 @@ func (s *BackendProtectionScenario) AssertRequestStatusCode(method, url string, 
 			},
 		}
 		res, err := client.Do(req)
-		s.Assert().NoError(err)
-		s.Assert().Equal(expectedStatusCode, res.StatusCode)
+		is.NoErr(err)
+		is.Equal(expectedStatusCode, res.StatusCode)
 	})
-}
-
-func (s *BackendProtectionScenario) TestProtectionOfBackendEndpoints() {
-	s.AssertRequestStatusCode("POST", fmt.Sprintf("%s/api/secondfactor/totp", AutheliaBaseURL), 403)
-	s.AssertRequestStatusCode("POST", fmt.Sprintf("%s/api/secondfactor/u2f/sign", AutheliaBaseURL), 403)
-	s.AssertRequestStatusCode("POST", fmt.Sprintf("%s/api/secondfactor/u2f/register", AutheliaBaseURL), 403)
-	s.AssertRequestStatusCode("POST", fmt.Sprintf("%s/api/secondfactor/u2f/sign_request", AutheliaBaseURL), 403)
-	s.AssertRequestStatusCode("POST", fmt.Sprintf("%s/api/user/info/2fa_method", AutheliaBaseURL), 403)
-
-	s.AssertRequestStatusCode("GET", fmt.Sprintf("%s/api/user/info", AutheliaBaseURL), 403)
-	s.AssertRequestStatusCode("GET", fmt.Sprintf("%s/api/configuration", AutheliaBaseURL), 403)
-
-	s.AssertRequestStatusCode("POST", fmt.Sprintf("%s/api/secondfactor/u2f/identity/start", AutheliaBaseURL), 403)
-	s.AssertRequestStatusCode("POST", fmt.Sprintf("%s/api/secondfactor/u2f/identity/finish", AutheliaBaseURL), 403)
-	s.AssertRequestStatusCode("POST", fmt.Sprintf("%s/api/secondfactor/totp/identity/start", AutheliaBaseURL), 403)
-	s.AssertRequestStatusCode("POST", fmt.Sprintf("%s/api/secondfactor/totp/identity/finish", AutheliaBaseURL), 403)
-}
-
-func (s *BackendProtectionScenario) TestInvalidEndpointsReturn404() {
-	s.AssertRequestStatusCode("GET", fmt.Sprintf("%s/api/not_existing", AutheliaBaseURL), 404)
-	s.AssertRequestStatusCode("HEAD", fmt.Sprintf("%s/api/not_existing", AutheliaBaseURL), 404)
-	s.AssertRequestStatusCode("POST", fmt.Sprintf("%s/api/not_existing", AutheliaBaseURL), 404)
-
-	s.AssertRequestStatusCode("GET", fmt.Sprintf("%s/api/not_existing/second", AutheliaBaseURL), 404)
-	s.AssertRequestStatusCode("HEAD", fmt.Sprintf("%s/api/not_existing/second", AutheliaBaseURL), 404)
-	s.AssertRequestStatusCode("POST", fmt.Sprintf("%s/api/not_existing/second", AutheliaBaseURL), 404)
-}
-
-func TestRunBackendProtection(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping suite test in short mode")
-	}
-
-	suite.Run(t, NewBackendProtectionScenario())
 }

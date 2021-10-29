@@ -6,64 +6,51 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/suite"
+	"github.com/matryer/is"
+	"github.com/poy/onpar"
 )
-
-type Traefik2Suite struct {
-	*RodSuite
-}
-
-func NewTraefik2Suite() *Traefik2Suite {
-	return &Traefik2Suite{RodSuite: new(RodSuite)}
-}
-
-func (s *Traefik2Suite) TestOneFactorScenario() {
-	suite.Run(s.T(), NewOneFactorScenario())
-}
-
-func (s *Traefik2Suite) TestTwoFactorScenario() {
-	suite.Run(s.T(), NewTwoFactorScenario())
-}
-
-func (s *Traefik2Suite) TestCustomHeaders() {
-	suite.Run(s.T(), NewCustomHeadersScenario())
-}
-
-func (s *Traefik2Suite) TestShouldKeepSessionAfterRedisRestart() {
-	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
-	defer func() {
-		cancel()
-		s.collectCoverage(s.Page)
-		s.collectScreenshot(ctx.Err(), s.Page)
-		s.MustClose()
-		err := s.RodSession.Stop()
-		s.Require().NoError(err)
-	}()
-
-	browser, err := StartRod()
-	s.Require().NoError(err)
-	s.RodSession = browser
-
-	s.Page = s.doCreateTab(s.T(), HomeBaseURL)
-	s.verifyIsHome(s.T(), s.Page)
-	secret := s.doRegisterThenLogout(s.T(), s.Context(ctx), "john", "password")
-
-	s.doLoginTwoFactor(s.T(), s.Context(ctx), "john", "password", false, secret, "")
-
-	s.doVisit(s.T(), s.Context(ctx), fmt.Sprintf("%s/secret.html", SecureBaseURL))
-	s.verifySecretAuthorized(s.T(), s.Context(ctx))
-
-	err = traefik2DockerEnvironment.Restart("redis")
-	s.Require().NoError(err)
-
-	s.doVisit(s.T(), s.Context(ctx), fmt.Sprintf("%s/secret.html", SecureBaseURL))
-	s.verifySecretAuthorized(s.T(), s.Context(ctx))
-}
 
 func TestTraefik2Suite(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping suite test in short mode")
 	}
 
-	suite.Run(t, NewTraefik2Suite())
+	o := onpar.New()
+	defer o.Run(t)
+
+	s := setupTest(t, "", true)
+	teardownTest(s)
+
+	o.BeforeEach(func(t *testing.T) (*testing.T, RodSuite) {
+		s := setupTest(t, "", false)
+		return t, s
+	})
+
+	o.AfterEach(func(t *testing.T, s RodSuite) {
+		teardownTest(s)
+	})
+
+	o.Spec("TestShouldKeepSessionAfterRedisRestart", func(t *testing.T, s RodSuite) {
+		is := is.New(t)
+		ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+		defer func() {
+			cancel()
+			s.collectScreenshot(t.Name(), ctx.Err(), s.Page)
+		}()
+
+		s.doLoginTwoFactor(t, s.Context(ctx), testUsername, testPassword, false, secret, "")
+
+		s.doVisit(s.Context(ctx), fmt.Sprintf("%s/secret.html", SecureBaseURL))
+		s.verifySecretAuthorized(t, s.Context(ctx))
+
+		err := traefik2DockerEnvironment.Restart("redis")
+		is.NoErr(err)
+
+		s.doVisit(s.Context(ctx), fmt.Sprintf("%s/secret.html", SecureBaseURL))
+		s.verifySecretAuthorized(t, s.Context(ctx))
+	})
+
+	TestRunOneFactorScenario(t)
+	TestRunTwoFactorScenario(t)
+	TestRunCustomHeadersScenario(t)
 }

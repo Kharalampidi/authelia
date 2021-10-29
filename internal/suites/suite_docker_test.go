@@ -3,29 +3,20 @@ package suites
 import (
 	"testing"
 
-	"github.com/stretchr/testify/suite"
+	"github.com/poy/onpar"
 )
-
-type DockerSuite struct {
-	*RodSuite
-}
-
-func NewDockerSuite() *DockerSuite {
-	return &DockerSuite{RodSuite: new(RodSuite)}
-}
-
-func (s *DockerSuite) TestOneFactorScenario() {
-	suite.Run(s.T(), NewOneFactorScenario())
-}
-
-func (s *DockerSuite) TestTwoFactorScenario() {
-	suite.Run(s.T(), NewTwoFactorScenario())
-}
 
 func TestDockerSuite(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping suite test in short mode")
 	}
 
-	suite.Run(t, NewDockerSuite())
+	o := onpar.New()
+	defer o.Run(t)
+
+	s := setupTest(t, "", true)
+	teardownTest(s)
+
+	TestRunOneFactorScenario(t)
+	TestRunTwoFactorScenario(t)
 }

@@ -50,7 +50,13 @@ var DuoBaseURL = "https://duo.example.com"
 // AutheliaBaseURL the base URL of Authelia service.
 var AutheliaBaseURL = "https://authelia.example.com:9091"
 
+var methods []string
+var secret = ""
+
 const stringTrue = "true"
 
-const testUsername = "john"
-const testPassword = "password"
+const (
+	testUsername = "john"
+	testPassword = "password"
+	badPassword  = "bad-password"
+)
