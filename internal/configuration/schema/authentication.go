@@ -33,6 +33,15 @@ type FileAuthenticationBackendConfiguration struct {
 	Password *PasswordConfiguration `koanf:"password"`
 }
 
+type MysqlAuthenticationBackendConfiguration struct {
+	Host     string        `koanf:"host"`
+	Port     int           `koanf:"port"`
+	Database string        `koanf:"database"`
+	Username string        `koanf:"username"`
+	Password string        `koanf:"password"`
+	Timeout  time.Duration `koanf:"timeout"`
+}
+
 // PasswordConfiguration represents the configuration related to password hashing.
 type PasswordConfiguration struct {
 	Iterations  int    `koanf:"iterations"`
@@ -45,10 +54,11 @@ type PasswordConfiguration struct {
 
 // AuthenticationBackendConfiguration represents the configuration related to the authentication backend.
 type AuthenticationBackendConfiguration struct {
-	DisableResetPassword bool                                    `koanf:"disable_reset_password"`
-	RefreshInterval      string                                  `koanf:"refresh_interval"`
-	LDAP                 *LDAPAuthenticationBackendConfiguration `koanf:"ldap"`
-	File                 *FileAuthenticationBackendConfiguration `koanf:"file"`
+	DisableResetPassword bool                                     `koanf:"disable_reset_password"`
+	RefreshInterval      string                                   `koanf:"refresh_interval"`
+	LDAP                 *LDAPAuthenticationBackendConfiguration  `koanf:"ldap"`
+	File                 *FileAuthenticationBackendConfiguration  `koanf:"file"`
+	MySQL                *MysqlAuthenticationBackendConfiguration `koanf:"mysql"`
 }
 
 // DefaultPasswordConfiguration represents the default configuration related to Argon2id hashing.

@@ -116,6 +116,8 @@ func getProviders(config *schema.Configuration) (providers middlewares.Providers
 		userProvider = authentication.NewFileUserProvider(config.AuthenticationBackend.File)
 	case config.AuthenticationBackend.LDAP != nil:
 		userProvider = authentication.NewLDAPUserProvider(config.AuthenticationBackend, autheliaCertPool)
+	case config.AuthenticationBackend.MySQL != nil:
+		userProvider = authentication.NewMysqlUserProvider(config.AuthenticationBackend.MySQL)
 	}
 
 	var notifier notification.Notifier

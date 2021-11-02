@@ -12,8 +12,8 @@ import (
 
 // ValidateAuthenticationBackend validates and updates the authentication backend configuration.
 func ValidateAuthenticationBackend(configuration *schema.AuthenticationBackendConfiguration, validator *schema.StructValidator) {
-	if configuration.LDAP == nil && configuration.File == nil {
-		validator.Push(errors.New("Please provide `ldap` or `file` object in `authentication_backend`"))
+	if configuration.LDAP == nil && configuration.File == nil && configuration.MySQL == nil {
+		validator.Push(errors.New("Please provide `ldap` or `file` or `mysql` object in `authentication_backend`"))
 	}
 
 	if configuration.LDAP != nil && configuration.File != nil {

@@ -254,6 +254,14 @@ var ValidKeys = []string{
 	"authentication_backend.disable_reset_password",
 	"authentication_backend.refresh_interval",
 
+	// MySQL Authentication Backend Keys.
+	"authentication_backend.mysql.host",
+	"authentication_backend.mysql.port",
+	"authentication_backend.mysql.database",
+	"authentication_backend.mysql.username",
+	"authentication_backend.mysql.password",
+	"authentication_backend.mysql.timeout",
+
 	// LDAP Authentication Backend Keys.
 	"authentication_backend.ldap.implementation",
 	"authentication_backend.ldap.url",
