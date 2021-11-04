@@ -33,6 +33,7 @@ type FileAuthenticationBackendConfiguration struct {
 	Password *PasswordConfiguration `koanf:"password"`
 }
 
+// MysqlAuthenticationBackendConfiguration represents the configuration related to mysql-based backend.
 type MysqlAuthenticationBackendConfiguration struct {
 	Connection *MysqlAuthenticationBackendConnectionConfiguration `koanf:"connection"`
 	Password   *PasswordConfiguration                             `koanf:"password"`

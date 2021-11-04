@@ -24,6 +24,9 @@ func ValidateAuthenticationBackend(configuration *schema.AuthenticationBackendCo
 		validateFileAuthenticationBackend(configuration.File, validator)
 	} else if configuration.LDAP != nil {
 		validateLDAPAuthenticationBackend(configuration.LDAP, validator)
+	} else if configuration.MySQL != nil {
+		validateMySQLAuthenticationBackend(configuration.MySQL, validator)
+
 	}
 
 	if configuration.RefreshInterval == "" {
@@ -32,6 +35,41 @@ func ValidateAuthenticationBackend(configuration *schema.AuthenticationBackendCo
 		_, err := utils.ParseDurationString(configuration.RefreshInterval)
 		if err != nil && configuration.RefreshInterval != schema.ProfileRefreshDisabled && configuration.RefreshInterval != schema.ProfileRefreshAlways {
 			validator.Push(fmt.Errorf("Auth Backend `refresh_interval` is configured to '%s' but it must be either a duration notation or one of 'disable', or 'always'. Error from parser: %s", configuration.RefreshInterval, err))
+		}
+	}
+}
+
+// validateFileAuthenticationBackend validates and updates the file authentication backend configuration.
+func validateMySQLAuthenticationBackend(configuration *schema.MysqlAuthenticationBackendConfiguration, validator *schema.StructValidator) {
+	if configuration.Connection == nil {
+		validator.Push(errors.New("Please provide a `connection` for the users database in `authentication_backend`"))
+	}
+
+	if configuration.Password == nil {
+		configuration.Password = &schema.DefaultPasswordConfiguration
+	} else {
+		// Salt Length
+		switch {
+		case configuration.Password.SaltLength == 0:
+			configuration.Password.SaltLength = schema.DefaultPasswordConfiguration.SaltLength
+		case configuration.Password.SaltLength < 8:
+			validator.Push(fmt.Errorf("The salt length must be 2 or more, you configured %d", configuration.Password.SaltLength))
+		}
+
+		switch configuration.Password.Algorithm {
+		case "":
+			configuration.Password.Algorithm = schema.DefaultPasswordConfiguration.Algorithm
+			fallthrough
+		case hashArgon2id:
+			validateMysqlAuthenticationBackendArgon2id(configuration, validator)
+		case hashSHA512:
+			validateMysqlAuthenticationBackendSHA512(configuration)
+		default:
+			validator.Push(fmt.Errorf("Unknown hashing algorithm supplied, valid values are argon2id and sha512, you configured '%s'", configuration.Password.Algorithm))
+		}
+
+		if configuration.Password.Iterations < 1 {
+			validator.Push(fmt.Errorf("The number of iterations specified is invalid, must be 1 or more, you configured %d", configuration.Password.Iterations))
 		}
 	}
 }
@@ -71,12 +109,48 @@ func validateFileAuthenticationBackend(configuration *schema.FileAuthenticationB
 	}
 }
 
+func validateMysqlAuthenticationBackendSHA512(configuration *schema.MysqlAuthenticationBackendConfiguration) {
+	// Iterations (time)
+	if configuration.Password.Iterations == 0 {
+		configuration.Password.Iterations = schema.DefaultPasswordSHA512Configuration.Iterations
+	}
+}
+
 func validateFileAuthenticationBackendSHA512(configuration *schema.FileAuthenticationBackendConfiguration) {
 	// Iterations (time)
 	if configuration.Password.Iterations == 0 {
 		configuration.Password.Iterations = schema.DefaultPasswordSHA512Configuration.Iterations
 	}
 }
+
+func validateMysqlAuthenticationBackendArgon2id(configuration *schema.MysqlAuthenticationBackendConfiguration, validator *schema.StructValidator) {
+	// Iterations (time)
+	if configuration.Password.Iterations == 0 {
+		configuration.Password.Iterations = schema.DefaultPasswordConfiguration.Iterations
+	}
+
+	// Parallelism
+	if configuration.Password.Parallelism == 0 {
+		configuration.Password.Parallelism = schema.DefaultPasswordConfiguration.Parallelism
+	} else if configuration.Password.Parallelism < 1 {
+		validator.Push(fmt.Errorf("Parallelism for argon2id must be 1 or more, you configured %d", configuration.Password.Parallelism))
+	}
+
+	// Memory
+	if configuration.Password.Memory == 0 {
+		configuration.Password.Memory = schema.DefaultPasswordConfiguration.Memory
+	} else if configuration.Password.Memory < configuration.Password.Parallelism*8 {
+		validator.Push(fmt.Errorf("Memory for argon2id must be %d or more (parallelism * 8), you configured memory as %d and parallelism as %d", configuration.Password.Parallelism*8, configuration.Password.Memory, configuration.Password.Parallelism))
+	}
+
+	// Key Length
+	if configuration.Password.KeyLength == 0 {
+		configuration.Password.KeyLength = schema.DefaultPasswordConfiguration.KeyLength
+	} else if configuration.Password.KeyLength < 16 {
+		validator.Push(fmt.Errorf("Key length for argon2id must be 16, you configured %d", configuration.Password.KeyLength))
+	}
+}
+
 func validateFileAuthenticationBackendArgon2id(configuration *schema.FileAuthenticationBackendConfiguration, validator *schema.StructValidator) {
 	// Iterations (time)
 	if configuration.Password.Iterations == 0 {

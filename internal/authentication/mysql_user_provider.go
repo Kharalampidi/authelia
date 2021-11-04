@@ -46,7 +46,12 @@ func NewMysqlUserProvider(configuration *schema.MysqlAuthenticationBackendConfig
 	if err != nil {
 		log.Fatalln(err)
 	}
-	return &MysqlUserProvider{database: db}
+	fmt.Println(configuration.Password.Algorithm)
+	return &MysqlUserProvider{
+		configuration: configuration,
+		database:      db,
+		lock:          &sync.Mutex{},
+	}
 }
 
 func (p *MysqlUserProvider) CheckUserPassword(username string, password string) (valid bool, err error) {
