@@ -17,7 +17,7 @@ const (
 )
 
 const (
-	// TOTP Method using Time-Based One-Time Password applications like Google Authenticator.
+	// TOTP Method using Time-Based One-Time MySQLPassword applications like Google Authenticator.
 	TOTP = "totp"
 	// U2F Method using U2F devices like Yubikeys.
 	U2F = "u2f"

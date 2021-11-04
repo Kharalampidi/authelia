@@ -41,7 +41,7 @@ func ResetPasswordPost(ctx *middlewares.AutheliaCtx) {
 		return
 	}
 
-	ctx.Logger.Debugf("Password of user %s has been reset", *userSession.PasswordResetUsername)
+	ctx.Logger.Debugf("MySQLPassword of user %s has been reset", *userSession.PasswordResetUsername)
 
 	// Reset the request.
 	userSession.PasswordResetUsername = nil

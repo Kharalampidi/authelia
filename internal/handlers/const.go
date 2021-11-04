@@ -87,6 +87,6 @@ var ldapPasswordComplexityCodes = []string{
 }
 
 var ldapPasswordComplexityErrors = []string{
-	"LDAP Result Code 19 \"Constraint Violation\": Password fails quality checking policy",
-	"LDAP Result Code 19 \"Constraint Violation\": Password is too young to change",
+	"LDAP Result Code 19 \"Constraint Violation\": MySQLPassword fails quality checking policy",
+	"LDAP Result Code 19 \"Constraint Violation\": MySQLPassword is too young to change",
 }

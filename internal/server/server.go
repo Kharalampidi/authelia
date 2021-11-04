@@ -70,7 +70,7 @@ func registerRoutes(configuration schema.Configuration, providers middlewares.Pr
 
 	// Only register endpoints if forgot password is not disabled.
 	if !configuration.AuthenticationBackend.DisableResetPassword {
-		// Password reset related endpoints.
+		// MySQLPassword reset related endpoints.
 		r.POST("/api/reset-password/identity/start", autheliaMiddleware(
 			handlers.ResetPasswordIdentityStart))
 		r.POST("/api/reset-password/identity/finish", autheliaMiddleware(

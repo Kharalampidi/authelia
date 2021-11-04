@@ -18,11 +18,12 @@ jwt_secret: very_important_secret
 
 authentication_backend:
   mysql:
-    host: mysql
-    port: 3306
-    database: authelia
-    username: admin
-    password: password
+    connection:
+      host: mysql
+      port: 3306
+      database: authelia
+      username: admin
+      password: password
 
 session:
   secret: unsecure_session_secret

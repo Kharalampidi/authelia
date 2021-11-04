@@ -22,6 +22,7 @@ func waitUntilServiceLogDetected(
 
 	err := utils.CheckUntil(5*time.Second, 1*time.Minute, func() (bool, error) {
 		logs, err := dockerEnvironment.Logs(service, []string{"--tail", "20"})
+		fmt.Println(logs)
 		fmt.Printf(".")
 
 		if err != nil {

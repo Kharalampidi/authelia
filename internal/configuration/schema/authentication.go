@@ -34,6 +34,11 @@ type FileAuthenticationBackendConfiguration struct {
 }
 
 type MysqlAuthenticationBackendConfiguration struct {
+	Connection *MysqlAuthenticationBackendConnectionConfiguration `koanf:"connection"`
+	Password   *PasswordConfiguration                             `koanf:"password"`
+}
+
+type MysqlAuthenticationBackendConnectionConfiguration struct {
 	Host     string        `koanf:"host"`
 	Port     int           `koanf:"port"`
 	Database string        `koanf:"database"`

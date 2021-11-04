@@ -12,7 +12,7 @@ import (
 	"github.com/authelia/authelia/v4/internal/logging"
 )
 
-// NewHashPasswordCmd returns a new Hash Password Cmd.
+// NewHashPasswordCmd returns a new Hash MySQLPassword Cmd.
 func NewHashPasswordCmd() (cmd *cobra.Command) {
 	cmd = &cobra.Command{
 		Use:   "hash-password [password]",
@@ -87,5 +87,5 @@ func cmdHashPasswordRun(cmd *cobra.Command, args []string) {
 		logging.Logger().Fatalf("Error occurred during hashing: %v\n", err)
 	}
 
-	fmt.Printf("Password hash: %s\n", hash)
+	fmt.Printf("MySQLPassword hash: %s\n", hash)
 }

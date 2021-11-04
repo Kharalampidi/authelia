@@ -27,7 +27,7 @@ func TestFullLoginAuth(t *testing.T) {
 	assert.Equal(t, []byte(username), toServer)
 	require.NoError(t, err)
 
-	toServer, err = auth.Next([]byte("Password:"), true)
+	toServer, err = auth.Next([]byte("MySQLPassword:"), true)
 	assert.Equal(t, []byte(password), toServer)
 	require.NoError(t, err)
 

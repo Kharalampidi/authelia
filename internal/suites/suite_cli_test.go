@@ -74,13 +74,13 @@ func (s *CLISuite) TestShouldFailValidateConfig() {
 func (s *CLISuite) TestShouldHashPasswordArgon2id() {
 	output, err := s.Exec("authelia-backend", []string{"authelia", s.testArg, s.coverageArg, "hash-password", "test", "-m", "32", "-s", "test1234"})
 	s.Assert().Nil(err)
-	s.Assert().Contains(output, "Password hash: $argon2id$v=19$m=32768,t=1,p=8")
+	s.Assert().Contains(output, "MySQLPassword hash: $argon2id$v=19$m=32768,t=1,p=8")
 }
 
 func (s *CLISuite) TestShouldHashPasswordSHA512() {
 	output, err := s.Exec("authelia-backend", []string{"authelia", s.testArg, s.coverageArg, "hash-password", "test", "-z"})
 	s.Assert().Nil(err)
-	s.Assert().Contains(output, "Password hash: $6$rounds=50000")
+	s.Assert().Contains(output, "MySQLPassword hash: $6$rounds=50000")
 }
 
 func (s *CLISuite) TestShouldGenerateCertificateRSA() {
